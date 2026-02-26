@@ -927,14 +927,20 @@ class IWP_MMB_Installer extends IWP_MMB_Core
                         if (strlen($theme_data->Name) === 0 || strlen($theme_data->Version) === 0) {
                             continue;
                         }
-                        if(!isset($current->response[$current_themes])){
-                            $current->response[$current_themes] = array();
+                        // WP can store theme update data as array or object; normalize to array.
+                        $theme_update = isset($current->response[$current_themes]) ? $current->response[$current_themes] : array();
+                        if (is_object($theme_update)) {
+                            $theme_update = (array) $theme_update;
                         }
-                        $current->response[$current_themes]['name']        = $theme_data->Name;
-                        $current->response[$current_themes]['old_version'] = $theme_data->Version;
-                        $current->response[$current_themes]['theme_tmp']   = $theme_data->Stylesheet;
+                        if (!is_array($theme_update)) {
+                            $theme_update = array();
+                        }
+                        $theme_update['name']        = $theme_data->Name;
+                        $theme_update['old_version'] = $theme_data->Version;
+                        $theme_update['theme_tmp']   = $theme_data->Stylesheet;
 
-                        $upgrade_themes[] = $current->response[$current_themes];
+                        $current->response[$current_themes] = $theme_update;
+                        $upgrade_themes[]                   = $theme_update;
                     }
                 }
             }
@@ -959,10 +965,20 @@ class IWP_MMB_Installer extends IWP_MMB_Core
 						foreach ($current->response as $current_themes => $theme) {
 							if ($theme_data['Template'] == $current_themes) {
 								if (strlen($theme_data['Name']) > 0 && strlen($theme_data['Version']) > 0) {
-									$current->response[$current_themes]['name']        = $theme_data['Name'];
-									$current->response[$current_themes]['old_version'] = $theme_data['Version'];
-									$current->response[$current_themes]['theme_tmp']   = $theme_data['Template'];
-									$upgrade_themes[]                                  = $current->response[$current_themes];
+									// WP can store theme update data as array or object; normalize to array.
+									$theme_update = isset($current->response[$current_themes]) ? $current->response[$current_themes] : array();
+									if (is_object($theme_update)) {
+										$theme_update = (array) $theme_update;
+									}
+									if (!is_array($theme_update)) {
+										$theme_update = array();
+									}
+									$theme_update['name']        = $theme_data['Name'];
+									$theme_update['old_version'] = $theme_data['Version'];
+									$theme_update['theme_tmp']   = $theme_data['Template'];
+
+									$current->response[$current_themes] = $theme_update;
+									$upgrade_themes[]                   = $theme_update;
 								}
 							}
 						}
