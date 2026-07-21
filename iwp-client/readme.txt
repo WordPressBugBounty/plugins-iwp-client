@@ -2,8 +2,8 @@
 Contributors: infinitewp, amritanandh, rajkuppus
 Tags: Multiple admin, backup, updates, security, multi site
 Requires at least: 3.1
-Tested up to: 6.9.1
-Stable tag: 1.13.5
+Tested up to: 7.0.2
+Stable tag: 1.13.6
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -49,6 +49,9 @@ Credits: [Vladimir Prelovac](http://prelovac.com/vladimir) for his worker plugin
 5. One-click updates
 
 == Changelog ==
+
+= 1.13.6 - Jul 21st 2026 =
+* Fix: Improved add site mechanism for mulitisite.
 
 = 1.13.5 - Feb 10th 2026 =
 * Fix: Fatal Error in Theme Update Detection (Limited Impact).

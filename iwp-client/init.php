@@ -4,7 +4,7 @@ Plugin Name: InfiniteWP - Client
 Plugin URI: http://infinitewp.com/
 Description: This is the client plugin of InfiniteWP that communicates with the InfiniteWP Admin panel.
 Author: Revmakx
-Version: 1.13.5
+Version: 1.13.6
 Author URI: http://www.revmakx.com
 Network: true
 */
@@ -29,7 +29,7 @@ if ( ! defined('ABSPATH') )
     die();
 
 if(!defined('IWP_MMB_CLIENT_VERSION'))
-	define('IWP_MMB_CLIENT_VERSION', '1.13.5');
+	define('IWP_MMB_CLIENT_VERSION', '1.13.6');
 
 if ( !defined('IWP_MMB_XFRAME_COOKIE')){
 	$siteurl = function_exists('get_site_option') ? get_site_option( 'siteurl' ) : get_option('siteurl');
@@ -469,9 +469,12 @@ if( !function_exists ( 'iwp_mmb_add_site' )) {
 		if ($num) {
 			if (!$iwp_mmb_core->get_option('iwp_client_action_message_id') && !$iwp_mmb_core->get_option('iwp_client_public_key')) {
 				$public_key = base64_decode($public_key);
-				
-				
-				if(trim($activation_key) != get_option('iwp_client_activate_key')){ //iwp
+				$activation_key = trim($activation_key);
+				if(empty($activation_key) || empty(get_option('iwp_client_activate_key'))){
+					iwp_mmb_response(array('error' => 'Invalid activation key', 'error_code' => 'iwp_mmb_add_site_invalid_activation_key'), false);
+					return;
+				}
+				if($activation_key !== get_option('iwp_client_activate_key')){ //iwp
 					iwp_mmb_response(array('error' => 'Invalid activation key', 'error_code' => 'iwp_mmb_add_site_invalid_activation_key'), false);
 					return;
 				}
@@ -543,8 +546,13 @@ if( !function_exists ( 'iwp_mmb_readd_site' )) {
 		if ($num) {
 			if (!get_option('iwp_client_action_message_id') && !get_option('iwp_client_public_key')) {
 				$public_key = base64_decode($public_key);
-				if(trim($activation_key) != get_option('iwp_client_activate_key')){ //iwp
-					iwp_mmb_response(array('error' => 'Invalid activation key', 'error_code' => 'iwp_mmb_readd_site_invalid_activation_key'), false);
+				$activation_key = trim($activation_key);
+				if(empty($activation_key) || empty(get_option('iwp_client_activate_key'))){
+					iwp_mmb_response(array('error' => 'Invalid activation key', 'error_code' => 'iwp_mmb_add_site_invalid_activation_key'), false);
+					return;
+				}
+				if($activation_key !== get_option('iwp_client_activate_key')){ //iwp
+					iwp_mmb_response(array('error' => 'Invalid activation key', 'error_code' => 'iwp_mmb_add_site_invalid_activation_key'), false);
 					return;
 				}
 				if (checkOpenSSL() && empty($user_random_key_signing)) {
