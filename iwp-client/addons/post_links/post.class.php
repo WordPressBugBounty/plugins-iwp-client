@@ -336,13 +336,11 @@ class IWP_MMB_Post extends IWP_MMB_Core
         if(isset($post_data['iwp_post_edit']) && $post_data['iwp_post_edit']){
         	
         	
-        	if($post_data['iwp_match_by'] == 'title'){
-        		$match_by = "post_title = '".$post_data['post_title']."'"; 
+        	if(isset($post_data['iwp_match_by']) && $post_data['iwp_match_by'] == 'title'){
+        		$query = $wpdb->prepare("SELECT ID FROM $wpdb->posts WHERE post_title = %s AND post_status NOT IN('inherit','auto-draft') LIMIT 1", $post_data['post_title']);
         	} else {
-        		$match_by = "post_name = '".$post_data['post_name']."'";
+        		$query = $wpdb->prepare("SELECT ID FROM $wpdb->posts WHERE post_name = %s AND post_status NOT IN('inherit','auto-draft') LIMIT 1", $post_data['post_name']);
         	}
-        	
-        	$query = "SELECT ID FROM $wpdb->posts WHERE $match_by AND post_status NOT IN('inherit','auto-draft') LIMIT 1";
         	
         	$post_result = $wpdb->get_var($query);
         	
@@ -457,12 +455,12 @@ class IWP_MMB_Post extends IWP_MMB_Core
     {
 
     	global $wpdb;
-    	$post_id = $args['post_id'];
+    	$post_id = (int)$args['post_id'];
     	$status = $args['status']; 
     	$success = false; 
     	
     	if(in_array($status, array('draft', 'publish', 'trash'))){
-			$sql = "update ".$wpdb->base_prefix."posts set post_status  = '$status' where ID = '$post_id'";
+			$sql = $wpdb->prepare("update ".$wpdb->base_prefix."posts set post_status = %s where ID = %d", $status, $post_id);
 			$success = $wpdb->query($sql);
     	}
 
@@ -600,17 +598,21 @@ class IWP_MMB_Post extends IWP_MMB_Core
 		global $wpdb;
 		if(!empty($args['post_id']) && !empty($args['action']))
 		{
+			$post_id = (int)$args['post_id'];
+			$delete_query = false;
 			if($args['action']=='delete')
 			{
-				$delete_query = "UPDATE $wpdb->posts SET post_status = 'trash' WHERE ID = ".$args['post_id'];
+				$delete_query = $wpdb->prepare("UPDATE $wpdb->posts SET post_status = 'trash' WHERE ID = %d", $post_id);
 			}
 			else if($args['action']=='delete_perm'){
-				$delete_query = "DELETE FROM $wpdb->posts WHERE ID = ".$args['post_id'];
+				$delete_query = $wpdb->prepare("DELETE FROM $wpdb->posts WHERE ID = %d", $post_id);
 			}
 			else if($args['action']=='delete_restore'){
-				$delete_query = "UPDATE $wpdb->posts SET post_status = 'publish' WHERE ID = ".$args['post_id'];
+				$delete_query = $wpdb->prepare("UPDATE $wpdb->posts SET post_status = 'publish' WHERE ID = %d", $post_id);
 			}
-			$wpdb->get_results($delete_query);
+			if(!empty($delete_query)){
+				$wpdb->query($delete_query);
+			}
 		
 			return 'Post deleted.';
 		}
@@ -623,22 +625,25 @@ class IWP_MMB_Post extends IWP_MMB_Core
 	function delete_posts($args){
 		global $wpdb;
 		extract($args);
-		if($deleteaction=='delete'){
-			$delete_query_intro = "DELETE FROM $wpdb->posts WHERE ID = ";
-		}elseif($deleteaction=='trash'){
-			$delete_query_intro = "UPDATE $wpdb->posts SET post_status = 'trash' WHERE ID = ";
-		}elseif($deleteaction=='draft'){
-			$delete_query_intro = "UPDATE $wpdb->posts SET post_status = 'draft' WHERE ID = ";
-		}elseif($deleteaction=='publish'){
-			$delete_query_intro = "UPDATE $wpdb->posts SET post_status = 'publish' WHERE ID = ";
+		$sql_format = '';
+		if(isset($deleteaction) && $deleteaction=='delete'){
+			$sql_format = "DELETE FROM $wpdb->posts WHERE ID = %d";
+		}elseif(isset($deleteaction) && $deleteaction=='trash'){
+			$sql_format = "UPDATE $wpdb->posts SET post_status = 'trash' WHERE ID = %d";
+		}elseif(isset($deleteaction) && $deleteaction=='draft'){
+			$sql_format = "UPDATE $wpdb->posts SET post_status = 'draft' WHERE ID = %d";
+		}elseif(isset($deleteaction) && $deleteaction=='publish'){
+			$sql_format = "UPDATE $wpdb->posts SET post_status = 'publish' WHERE ID = %d";
 		}
-		foreach($args as $key=>$val){
-			
-			if(!empty($val) && is_numeric($val))
-			{
-				$delete_query = $delete_query_intro.$val;
+		if(!empty($sql_format)){
+			foreach($args as $key=>$val){
 				
-				$wpdb->query($delete_query);
+				if(!empty($val) && is_numeric($val))
+				{
+					$delete_query = $wpdb->prepare($sql_format, (int)$val);
+					
+					$wpdb->query($delete_query);
+				}
 			}
 		}
 		return "Post deleted";
@@ -762,17 +767,21 @@ class IWP_MMB_Post extends IWP_MMB_Core
 		global $wpdb;
 		if(!empty($args['post_id']) && !empty($args['action']))
 		{
+			$post_id = (int)$args['post_id'];
+			$delete_query = false;
 			if($args['action']=='delete')
 			{
-				$delete_query = "UPDATE $wpdb->posts SET post_status = 'trash' WHERE ID = ".$args['post_id'];
+				$delete_query = $wpdb->prepare("UPDATE $wpdb->posts SET post_status = 'trash' WHERE ID = %d", $post_id);
 			}
 			else if($args['action']=='delete_perm'){
-				$delete_query = "DELETE FROM $wpdb->posts WHERE ID = ".$args['post_id'];
+				$delete_query = $wpdb->prepare("DELETE FROM $wpdb->posts WHERE ID = %d", $post_id);
 			}
 			else if($args['action']=='delete_restore'){
-				$delete_query = "UPDATE $wpdb->posts SET post_status = 'publish' WHERE ID = ".$args['post_id'];
+				$delete_query = $wpdb->prepare("UPDATE $wpdb->posts SET post_status = 'publish' WHERE ID = %d", $post_id);
 			}
-			$wpdb->get_results($delete_query);
+			if(!empty($delete_query)){
+				$wpdb->query($delete_query);
+			}
 		
 			return 'Page deleted.';
 		}

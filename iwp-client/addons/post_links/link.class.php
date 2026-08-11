@@ -163,8 +163,9 @@ INNER JOIN $wpdb->terms ON ( $wpdb->term_taxonomy.term_id = $wpdb->terms.term_id
 		
 		if(!empty($args['link_id']))
 		{
-			$delete_query = "DELETE FROM $wpdb->links WHERE link_id = ".$args['link_id'];
-			$wpdb->get_results($delete_query);
+			$link_id = (int)$args['link_id'];
+			$delete_query = $wpdb->prepare("DELETE FROM $wpdb->links WHERE link_id = %d", $link_id);
+			$wpdb->query($delete_query);
 		
 			return 'Link deleted.';
 		}
@@ -178,16 +179,15 @@ INNER JOIN $wpdb->terms ON ( $wpdb->term_taxonomy.term_id = $wpdb->terms.term_id
 		global $wpdb;
 		extract($args);
 		
-		if($deleteaction=='delete'){
-			$delete_query_intro = "DELETE FROM $wpdb->links WHERE link_id = ";
-		}
-		foreach($args as $key=>$val){
-			
-			if(!empty($val) && is_numeric($val))
-			{
-				$delete_query = $delete_query_intro.$val;
+		if(isset($deleteaction) && $deleteaction=='delete'){
+			foreach($args as $key=>$val){
 				
-				$wpdb->query($delete_query);
+				if(!empty($val) && is_numeric($val))
+				{
+					$delete_query = $wpdb->prepare("DELETE FROM $wpdb->links WHERE link_id = %d", (int)$val);
+					
+					$wpdb->query($delete_query);
+				}
 			}
 		}
 		return "Link deleted";

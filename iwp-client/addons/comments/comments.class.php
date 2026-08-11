@@ -150,12 +150,13 @@ class IWP_MMB_Comment extends IWP_MMB_Core
 		}
 		
 		if(!empty($comment_id)){
+			$comment_id = (int)$comment_id;
 			if($docomaction == 'delete'){
-				$update_query = "DELETE FROM $wpdb->comments WHERE comment_ID = ".$comment_id;
-				$delete_query = "DELETE FROM $wpdb->commentmeta WHERE comment_id = ".$comment_id;
+				$update_query = $wpdb->prepare("DELETE FROM $wpdb->comments WHERE comment_ID = %d", $comment_id);
+				$delete_query = $wpdb->prepare("DELETE FROM $wpdb->commentmeta WHERE comment_id = %d", $comment_id);
 				$wpdb->query($delete_query);
 			}else{
-				$update_query = "UPDATE $wpdb->comments SET comment_approved = '".$docomaction."' WHERE comment_ID = ".$comment_id;
+				$update_query = $wpdb->prepare("UPDATE $wpdb->comments SET comment_approved = %s WHERE comment_ID = %d", $docomaction, $comment_id);
 			}
 			$wpdb->query($update_query);
 		
@@ -169,25 +170,24 @@ class IWP_MMB_Comment extends IWP_MMB_Core
 		global $wpdb;
 		extract($args);
 		
-		if($docomaction=='delete'){
-			$update_query_intro = "DELETE FROM $wpdb->comments WHERE comment_ID = ";
-		}else{
-			if($docomaction=='unapprove' || $docomaction == 'untrash' || $docomaction == 'unspam'){
-				$docomaction = '0';
-			}else if($docomaction == 'approve'){
-				$docomaction = '1';
-			}
-			$update_query_intro = "UPDATE $wpdb->comments SET comment_approved = '".$docomaction."' WHERE comment_ID = ";
+		if(isset($docomaction) && ($docomaction=='unapprove' || $docomaction == 'untrash' || $docomaction == 'unspam')){
+			$docomaction = '0';
+		}else if(isset($docomaction) && $docomaction == 'approve'){
+			$docomaction = '1';
 		}
+		
 		foreach($args as $key=>$val){
 			
 			if(!empty($val) && is_numeric($val))
 			{
-				if($docomaction=='delete'){
-					$delete_query = "DELETE FROM $wpdb->commentmeta WHERE comment_id = ".$val;
+				$comment_id = (int)$val;
+				if(isset($docomaction) && $docomaction=='delete'){
+					$delete_query = $wpdb->prepare("DELETE FROM $wpdb->commentmeta WHERE comment_id = %d", $comment_id);
 					$wpdb->query($delete_query);
+					$update_query = $wpdb->prepare("DELETE FROM $wpdb->comments WHERE comment_ID = %d", $comment_id);
+				}else{
+					$update_query = $wpdb->prepare("UPDATE $wpdb->comments SET comment_approved = %s WHERE comment_ID = %d", $docomaction, $comment_id);
 				}
-				$update_query = $update_query_intro.$val;
 				
 				$wpdb->query($update_query);
 			}

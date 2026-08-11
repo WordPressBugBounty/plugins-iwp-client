@@ -652,9 +652,13 @@ class IWP_MMB_Activities_log {
 			iwp_mmb_response(array('error' => 'Invalid request', 'error_code' => 'invalid_request'), false);
 		}
 
-		$iwp_action = implode("','",$params['actions']);	
+		$params['fromDate'] = (int)$params['fromDate'];
+		$params['toDate'] = (int)$params['toDate'];
 
-		$query = "
+		$escaped_actions = array_map('esc_sql', $params['actions']);
+		$iwp_action = implode("','", $escaped_actions);
+
+		$query = $wpdb->prepare("
 			select 
 				p.ID as post_id, 
 				p.post_date as date, 
@@ -663,13 +667,13 @@ class IWP_MMB_Activities_log {
 				{$wpdb->prefix}posts as p 
 				left join {$wpdb->prefix}postmeta as pm on pm.post_id = p.ID 
 			where 
-				p.post_type = '".$iwp_activities_log_post_type."' 
-				and unix_timestamp(p.post_date)>='".$params['fromDate']."' 
-				and unix_timestamp(p.post_date)<='".$params['toDate']."' 
+				p.post_type = %s 
+				and unix_timestamp(p.post_date)>=%d 
+				and unix_timestamp(p.post_date)<=%d 
 				and pm.meta_key in ('".$iwp_activities_log_post_type."_actions') 
 				and pm.meta_value in ('".$iwp_action."')
 			order by p.post_date asc
-		";
+		", $iwp_activities_log_post_type, $params['fromDate'], $params['toDate']);
 		
 		$activities_log_result = $wpdb->get_results($query,ARRAY_A);
 		$return = array();
@@ -755,7 +759,7 @@ class IWP_MMB_Activities_log {
 			$return['detailed'][$wordfence]['details'] = $logCounts;
 		}
 		if (in_array($backups_key, $params['actions']) && iwp_mmb_is_WPTC()) {
-			$query = "SELECT backup_id from ".$wpdb->base_prefix."wptc_backups WHERE backup_id >='".$params['fromDate']."' AND backup_id<='".$params['toDate']."'";
+			$query = $wpdb->prepare("SELECT backup_id from ".$wpdb->base_prefix."wptc_backups WHERE backup_id >= %d AND backup_id <= %d", $params['fromDate'], $params['toDate']);
 			$wptc_backup_counts = 0;
 			$wptc_backups = $wpdb->get_results($query,ARRAY_A);
 			if (!empty($wptc_backups)) {
