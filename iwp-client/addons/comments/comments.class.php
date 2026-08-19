@@ -58,17 +58,20 @@ class IWP_MMB_Comment extends IWP_MMB_Core
 		{
 			if($checkbox_val=="on") {
 				$status_val = str_replace("iwp_get_comments_","",$checkbox);
-				if($status_val == 'approved'){
-					$status_val = 1;
-				}elseif($status_val == 'pending'){
-					$status_val = 0;
+				if (in_array($status_val, $comment_statuses, true)) {
+					if($status_val == 'approved'){
+						$status_val = 1;
+					}elseif($status_val == 'pending'){
+						$status_val = 0;
+					}
+					$comment_array[] = $status_val;
 				}
-				$comment_array[]="'".$status_val."'";
 			}
 		}
 		if(!empty($comment_array))
 		{
-			$where.=" AND c.comment_approved IN (".implode(",",$comment_array).")";
+			$placeholders = implode(',', array_fill(0, count($comment_array), '%s'));
+			$where .= $wpdb->prepare(" AND c.comment_approved IN ($placeholders)", $comment_array);
 		}
 		
 		$sql_query = "$wpdb->comments as c, $wpdb->posts as p WHERE c.comment_post_ID = p.ID ".$where;
@@ -205,8 +208,19 @@ class IWP_MMB_Comment extends IWP_MMB_Core
 		if(!empty($comment_id) && !empty($reply_text)){
 			$admins = get_userdata($current_user->ID);
 			$now = time();
-			$insert_reply = "INSERT INTO $wpdb->comments(comment_post_ID, comment_author, comment_author_email, comment_author_url, comment_author_IP, comment_date, comment_date_gmt, comment_content, comment_karma, comment_approved, comment_agent, comment_parent, user_id) VALUES(".$post_id.", '".$admins->user_login."', '".$admins->user_email."', '".$admins->user_url."', '".$_SERVER['REMOTE_ADDR']."', NOW(), NOW(), '%s', 0, 1, '".$_SERVER['HTTP_USER_AGENT']."', ".$comment_id.", ".$current_user->ID.")";
-			$insert_reply_res = $wpdb->query($wpdb->prepare($insert_reply, $reply_text));
+			$insert_reply = $wpdb->prepare(
+				"INSERT INTO $wpdb->comments(comment_post_ID, comment_author, comment_author_email, comment_author_url, comment_author_IP, comment_date, comment_date_gmt, comment_content, comment_karma, comment_approved, comment_agent, comment_parent, user_id) VALUES(%d, %s, %s, %s, %s, NOW(), NOW(), %s, 0, 1, %s, %d, %d)",
+				absint($post_id),
+				(string) $admins->user_login,
+				(string) $admins->user_email,
+				(string) $admins->user_url,
+				(string) $_SERVER['REMOTE_ADDR'],
+				(string) $reply_text,
+				(string) $_SERVER['HTTP_USER_AGENT'],
+				absint($comment_id),
+				absint($current_user->ID)
+			);
+			$insert_reply_res = $wpdb->query($insert_reply);
 			$lastid = $wpdb->insert_id;
 		
 			$comments_approved = $this->comment_total();
@@ -222,7 +236,10 @@ class IWP_MMB_Comment extends IWP_MMB_Core
 			
 			$comment_parent_author = '';
 			if($comment_id > 0){
-				$select_parent_author = "SELECT c.comment_author, p.post_title, p.post_type, p.guid FROM $wpdb->comments as c, $wpdb->posts as p WHERE c.comment_post_ID = p.ID AND c.comment_ID = ".$comment_id;
+				$select_parent_author = $wpdb->prepare(
+					"SELECT c.comment_author, p.post_title, p.post_type, p.guid FROM $wpdb->comments as c, $wpdb->posts as p WHERE c.comment_post_ID = p.ID AND c.comment_ID = %d",
+					absint($comment_id)
+				);
 				$select_parent_author_res = $wpdb->get_row($select_parent_author);
 				$comment_parent_author = $select_parent_author_res->comment_author;
 			}

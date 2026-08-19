@@ -98,7 +98,8 @@ class IWP_MMB_Optimize extends IWP_MMB_Core
 			case "revisions":
 				$revisionWhere = '';
 				if (!empty($numberOfRevisions) && $numberOfRevisions != 0) {
-					$revisionQuery = "SELECT ID FROM $wpdb->posts WHERE post_type = 'revision' order by ID desc LIMIT ". $numberOfRevisions;
+					$numberOfRevisions = absint($numberOfRevisions);
+					$revisionQuery = $wpdb->prepare("SELECT ID FROM $wpdb->posts WHERE post_type = 'revision' ORDER BY ID DESC LIMIT %d", $numberOfRevisions);
 					$revisionIDs = $wpdb->get_results( $revisionQuery, ARRAY_N );
 					$revisionsIDsArray = array();
 					foreach ($revisionIDs as $key => $revisionID) {

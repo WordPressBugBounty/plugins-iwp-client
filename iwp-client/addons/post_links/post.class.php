@@ -515,20 +515,23 @@ class IWP_MMB_Post extends IWP_MMB_Core
 		$post_statuses = array('publish', 'pending', 'private', 'future', 'draft', 'trash');
 		foreach ($args as $checkbox => $checkbox_val)
 		{
-			if($checkbox_val=="on") {
-				$post_array[]="'".str_replace("iwp_get_posts_","",$checkbox)."'";
+			$v = str_replace('iwp_get_posts_', '', $checkbox);
+			if ($checkbox_val === 'on' && in_array($v, $post_statuses, true)) {
+				$post_array[] = $v;
 			}
 		}
 		if(!empty($post_array))
 		{
-			$where.=" AND post_status IN (".implode(",",$post_array).")";
+			$placeholders = implode(',', array_fill(0, count($post_array), '%s'));
+			$where .= $wpdb->prepare(" AND post_status IN ($placeholders)", $post_array);
 		}
 
 		if (!isset($iwp_get_posts_range)) {
 			$iwp_get_posts_range = '';
 		}
 		
-		$limit = ($iwp_get_posts_range) ? ' LIMIT ' . esc_sql($iwp_get_posts_range) : ' LIMIT 500';
+		$range = absint($iwp_get_posts_range); 
+		$limit = $range ? $wpdb->prepare(' LIMIT %d', $range) : ' LIMIT 500';
 		
 		$sql_query = "$wpdb->posts  WHERE post_status!='auto-draft' AND post_status!='inherit' AND (post_type='post' OR post_type = 'link_library_links') ".$where." ORDER BY post_date DESC";
 		
@@ -545,7 +548,7 @@ class IWP_MMB_Post extends IWP_MMB_Core
 			$sql_query = "$wpdb->posts 
                 WHERE post_status!='auto-draft' AND post_status!='inherit' AND (post_type='post' OR post_type = 'link_library_links')  AND post_date <= '".esc_sql($iwp_get_posts_date_to)."' 
 				ORDER BY post_date DESC
-                LIMIT " . esc_sql($iwp_get_posts_range);
+                " . $limit;
 			
 			$posts_info = $wpdb->get_results("SELECT * FROM ".$sql_query);
 			$total = array();
@@ -702,19 +705,22 @@ class IWP_MMB_Post extends IWP_MMB_Core
 		$post_statuses = array('publish', 'pending', 'private', 'future', 'draft', 'trash');
 		foreach ($args as $checkbox => $checkbox_val)
 		{
-			if($checkbox_val=="on") {
-				$post_array[]="'".str_replace("iwp_get_pages_","",$checkbox)."'";
+			$v = str_replace('iwp_get_pages_', '', $checkbox);
+			if ($checkbox_val === 'on' && in_array($v, $post_statuses, true)) {
+				$post_array[] = $v;
 			}
 		}
 		if(!empty($post_array))
 		{
-			$where.=" AND post_status IN (".implode(",",$post_array).")";
+			$placeholders = implode(',', array_fill(0, count($post_array), '%s'));
+			$where .= $wpdb->prepare(" AND post_status IN ($placeholders)", $post_array);
 		}
 		if (!isset($iwp_get_pages_range)) {
 			$iwp_get_pages_range = '';
 		}
 		
-            $limit = ($iwp_get_pages_range) ? ' LIMIT ' . esc_sql($iwp_get_pages_range) : ' LIMIT 500';
+        $range = absint($iwp_get_pages_range); 
+		$limit = $range ? $wpdb->prepare(' LIMIT %d', $range) : ' LIMIT 500';
          
 		
 		$sql_query = "$wpdb->posts  WHERE post_status!='auto-draft' AND post_status!='inherit' AND post_type='page' ".$where.' ORDER BY post_date DESC';
@@ -729,7 +735,7 @@ class IWP_MMB_Post extends IWP_MMB_Core
 			$sql_query = "$wpdb->posts 
                 WHERE post_status!='auto-draft' AND post_status!='inherit' AND post_type='post'  AND post_date <= '".esc_sql($iwp_get_pages_date_to)."' 
 				ORDER BY post_date DESC
-                LIMIT " . esc_sql($iwp_get_pages_range);
+                " . $limit;
             
            
            

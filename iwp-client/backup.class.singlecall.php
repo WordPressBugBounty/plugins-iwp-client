@@ -217,7 +217,10 @@ function delete_task_now($task_name){
         }
     }
     $iwp_backup_core->save_history($new_backup_method);
-	$delete_query = "DELETE FROM ".$table_name." WHERE taskName = '".$task_name."' ";
+	$delete_query = $wpdb->prepare(
+		"DELETE FROM {$table_name} WHERE taskName = %s",
+		$task_name
+	);
 	$deleteRes = $wpdb->query($delete_query);
 	
 	$this->update_tasks($tasks);
@@ -2978,14 +2981,28 @@ function ftp_backup($args)
     function remove_failed_backups($ID){
         global $wpdb;
         $table_name = $wpdb->base_prefix . "iwp_backup_status";
-        $delete_query = "DELETE FROM ".$table_name." WHERE ID = '".$ID."' ";
+        $delete_query = $wpdb->prepare(
+            "DELETE FROM {$table_name} WHERE ID = %d",
+            absint($ID)
+        );
         $deleteRes = $wpdb->query($delete_query);
     }
 
     function remove_failed_backups_by_hisID($ID){
         global $wpdb;
         $table_name = $wpdb->base_prefix . "iwp_backup_status";
-        $delete_query = "DELETE FROM ".$table_name." WHERE historyID IN (".implode(', ', $ID).") ";
+        $ids = array_map('absint', (array)$ID);
+        $ids = array_filter($ids, static function ($value) {
+            return $value > 0;
+        });
+        if (empty($ids)) {
+            return;
+        }
+        $placeholders = implode(', ', array_fill(0, count($ids), '%d'));
+        $delete_query = $wpdb->prepare(
+            "DELETE FROM {$table_name} WHERE historyID IN ({$placeholders})",
+            $ids
+        );
         $deleteRes = $wpdb->query($delete_query);
     }
 
@@ -3096,7 +3113,7 @@ function ftp_backup($args)
 		
 		$requestParams = $this->get_this_tasks("requestParams");
 		
-		$limit = $requestParams['args']['limit'];
+		$limit = absint($requestParams['args']['limit']);
 
         $other_method_backups = iwp_mmb_get_backup_ID_by_taskname('advanced', $task_name);
         $current_backups = $this->get_timestamp_by_label($task_name);
@@ -3134,9 +3151,13 @@ function ftp_backup($args)
             }
         }
 						
-		$select_prev_backup = "SELECT historyID, taskResults FROM ".$table_name." WHERE taskName = '".$task_name."' ORDER BY ID DESC LIMIT ".$limit.",100 ";
+		$select_prev_backup = $wpdb->prepare(
+			"SELECT historyID, taskResults FROM {$table_name} WHERE taskName = %s ORDER BY ID DESC LIMIT %d, 100",
+			$task_name,
+			$limit
+		);
 										
-		$select_prev_backup_res = $wpdb->get_results($select_prev_backup,  ARRAY_A);
+		$select_prev_backup_res = $wpdb->get_results($select_prev_backup, ARRAY_A);
 		
 				
 		foreach ( $select_prev_backup_res as $backup_data ) 
@@ -3196,7 +3217,10 @@ function ftp_backup($args)
 				$this->remove_google_drive_backup($args);
 			}
 			
-			$delete_query = "DELETE FROM ".$table_name." WHERE historyID = '".$backup_data['historyID']."'";
+			$delete_query = $wpdb->prepare(
+				"DELETE FROM {$table_name} WHERE historyID = %d",
+				absint($backup_data['historyID'])
+			);
 												
 			$deleteRes = $wpdb->query($delete_query);
 		}
@@ -3284,7 +3308,10 @@ function ftp_backup($args)
             $this->remove_google_drive_backup($args);
         }
 		
-		$delete_query = "DELETE FROM ".$table_name." WHERE historyID = '".$result_id."'";
+		$delete_query = $wpdb->prepare(
+			"DELETE FROM {$table_name} WHERE historyID = %d",
+			absint($result_id)
+		);
 												
 		$deleteRes = $wpdb->query($delete_query);
 		
@@ -3294,13 +3321,24 @@ function ftp_backup($args)
     
 	function getRequiredData($historyID, $field){
 		global $wpdb;
-		
-		$backupData = $wpdb->get_row("SELECT ".$field." FROM ".$wpdb->base_prefix."iwp_backup_status WHERE historyID = '".$historyID."'");
-		if(($field == 'responseParams')||($field == 'requestParams')||($field == 'taskResults'))
-		$fieldParams = unserialize($backupData->$field);
-		else
-		$fieldParams = $backupData->$field;
-		return $fieldParams;	
+
+		$allowed_fields = array('requestParams', 'responseParams', 'taskResults', 'category');
+		if (!in_array($field, $allowed_fields, true)) {
+			return null;
+		}
+
+		$backupData = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT {$field} FROM {$wpdb->base_prefix}iwp_backup_status WHERE historyID = %d",
+				$historyID
+			)
+		);
+		if (($field == 'responseParams') || ($field == 'requestParams') || ($field == 'taskResults')) {
+			$fieldParams = unserialize($backupData->$field);
+		} else {
+			$fieldParams = $backupData->$field;
+		}
+		return $fieldParams;
 	}
 	
     function cleanup()
@@ -3623,10 +3661,13 @@ function ftp_backup($args)
         $new_backup_keys = array();
         global $wpdb;
         $table_name = $wpdb->base_prefix . "iwp_backup_status";
-        $select_prev_backup = "SELECT historyID, lastUpdateTime FROM ".$table_name." WHERE taskName = '".$label."' ORDER BY ID DESC ";
+        $select_prev_backup = $wpdb->prepare(
+            "SELECT historyID, lastUpdateTime FROM {$table_name} WHERE taskName = %s ORDER BY ID DESC",
+            $label
+        );
         $select_prev_backup_res = $wpdb->get_results($select_prev_backup, ARRAY_A);
         foreach ($select_prev_backup_res as $key => $value) {
-            $new_backup_keys[$value['lastUpdateTime']]= $value['historyID'];
+            $new_backup_keys[$value['lastUpdateTime']] = $value['historyID'];
         }
         return $new_backup_keys;
     }

@@ -2,8 +2,8 @@
 Contributors: infinitewp, amritanandh, rajkuppus
 Tags: Multiple admin, backup, updates, security, multi site
 Requires at least: 3.1
-Tested up to: 7.0.3
-Stable tag: 1.13.7
+Tested up to: 7.0.2
+Stable tag: 1.13.10
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -49,6 +49,9 @@ Credits: [Vladimir Prelovac](http://prelovac.com/vladimir) for his worker plugin
 5. One-click updates
 
 == Changelog ==
+
+= 1.13.10 - Aug 19th 2026 =
+* Fix: Improved Comments, Posts and pages, and activity logs.
 
 = 1.13.7 - Aug 11th 2026 =
 * Fix: Improved Comments, Posts and pages, Links, and Activity log.
